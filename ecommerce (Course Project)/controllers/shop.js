@@ -3,35 +3,46 @@ const Cart = require('../models/cart');
 
 
 exports.getIndex = (req, res, next) => {
-    Product.fetchAll(products => {
+     // the anon function will be executed once we get the data 
+    // rows will be the first element of the nested array, and fieldData will contain the data
+    Product.fetchAll()
+    .then(([rows, fieldData]) => {
         res.render('shop/index', {
-            prods: products,
+            prods: rows,
             pageTitle: 'Shop',
             path: '/'
-        });
-    });
+         });
+    })
+    .catch(err => console.log(err));
+      
 }
 
 exports.getProducts = (req, res, next) => {
-    Product.fetchAll(products => {
+    Product.fetchAll()
+    .then(([rows, fieldData]) => {
         res.render('shop/product-list', {
-            prods: products,
+            prods: rows,
             pageTitle: 'All Products',
             path: '/products'
         });
-    });
+    })
+    .catch(err => console.log(err));
 };
 
 exports.getProduct = (req, res, next) => {
     const prodId = req.params.productId
-    Product.findById(prodId, product => {
-           res.render('shop/product-detail', {
-            product: product,
-            pageTitle: product.title,
-            path: '/products/:productId'
-    
-        })
-    })
+    Product.findById(prodId)
+    .then(
+        ([product] )=> {
+                res.render('shop/product-detail', {
+                 product: product[0],
+                 pageTitle: product.title,
+                 path: '/products/:productId'
+         
+             })
+        }
+    )
+    .catch(err => console.log(err))
 }
 
 

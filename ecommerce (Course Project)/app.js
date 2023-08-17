@@ -4,6 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path')
 
+
+const db = require('./util/database');
+
 const https = require('https');
 
 const app = express();
