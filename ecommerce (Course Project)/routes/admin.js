@@ -12,7 +12,7 @@ const router = express.Router();
 // // next is a function that will be passed to use() allows the request to move to the middleware
 router.get('/add-product', adminController.getAddProducts); // pass a reference to this function (store it somewhere until needed)
 
-router.get('/products', adminController.getProducts)
+ router.get('/products', adminController.getProducts)
 
 router.post('/add-product', adminController.postAddProduct);
 

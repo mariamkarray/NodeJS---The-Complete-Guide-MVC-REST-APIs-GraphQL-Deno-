@@ -15,8 +15,13 @@ exports.postAddProduct = (req, res) => {
     const imageUrl = req.body.imageUrl;
     const price = req.body.price;
     const description = req.body.description;
-   const product = new Product(title, price, description, imageUrl, null, req.user._id);
-   product.save()
+   const product = new Product({title: title, 
+    price: price, 
+    description: description, 
+    imageUrl: imageUrl,
+    userId: req.user._id
+});
+   product.save() // save() is in mongoose
     .then(
         result => {
             console.log('Created Product');
@@ -35,7 +40,7 @@ exports.getEditProduct = (req, res, next) => {
     // we can extract the product ID from the url
     const prodId = req.params.productId;
 
-   Product.findByPk(prodId)
+   Product.findById(prodId)
 
     // after recieving the product, callback product is executed
    // Product.findByPk(prodId)
@@ -59,12 +64,14 @@ exports.postEditProduct = (req, res, next) => {
     // this is the edit route
     // so i can get the new values i want to store as a part of the post request
     // because the user enters them in the form (post req body is sent to me)
-    const updatedTitle = req.body.title;
-    const updatedPrice = req.body.price;
-    const updatedImageUrl = req.body.imageUrl;
-    const updatedDescription = req.body.description;
-    const product = new Product(updatedTitle, updatedPrice, updatedDescription, updatedImageUrl, new ObjectId(prodId))
-    product.save()
+    const { title, imageUrl, price, description } = req.body;
+ 
+    Product.findByIdAndUpdate(prodId, {
+        title,
+        imageUrl,
+        price,
+        description,
+    })
     // handle success responses from .save() promise
     .then(result => {
         res.redirect('/admin/products')
@@ -74,7 +81,7 @@ exports.postEditProduct = (req, res, next) => {
 };
 
  exports.getProducts = (req, res, next) => {
-    Product.fetchAll()
+    Product.find()
     .then(products => {
         res.render('admin/products', {
             prods: products,
@@ -88,7 +95,7 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
     const prodId = req.body.productId;
-    Product.deleteById(prodId)
+    Product.findByIdAndRemove(prodId)
     .then( () => {
         console.log('DELETED PRODUCT!')
         res.redirect('/admin/products')

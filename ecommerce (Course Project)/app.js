@@ -2,11 +2,12 @@
 // handling different types of requests, managing cookies and sessions, and serving static files, etc
 const express = require('express');
 const bodyParser = require('body-parser');
+
+const mongoose = require('mongoose');
+
 const path = require('path')
 
 const https = require('https');
-
-const mongoConnect = require('./util/database').mongoConnect;
 
 const User = require('./models/user');
 
@@ -33,9 +34,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // the next() function is used to pass control to the next middleware function or route handler in the Express application's request-response cycle.
 // It's important for ensuring that the application's execution continues to the next step after the current middleware has finished its task.
 app.use((req, res, next) => {
-    User.findByPk('64e683c2a5a819053ca89ac4')
+    User.findById('64eb8bd17ac248f586ee91d6')
 .then(user => {
-    req.user = new User(user.name, user.email, user.cart, user._id);
+    req.user = user;
     next();
 })
 .catch(err => console.log(err));
@@ -49,6 +50,25 @@ app.use(shopRoutes);
 
 app.use(errorController.get404); 
 
-mongoConnect(() => {
+mongoose.connect('mongodb+srv://Mariam:22618166@cluster0.2szm7sk.mongodb.net/shop?retryWrites=true&w=majority')
+.then(result => {
+    User.findOne()
+    .then(user => {
+        if (!user) {
+            const user = new User({
+                name: 'Mariam',
+                email: 'mariam@example.com',
+                cart: {
+                    items: []
+                }
+            })
+            
+        user.save();
+        }
+    })
     app.listen(3000);
+
+})
+.catch(err => {
+    console.log(err)
 })
