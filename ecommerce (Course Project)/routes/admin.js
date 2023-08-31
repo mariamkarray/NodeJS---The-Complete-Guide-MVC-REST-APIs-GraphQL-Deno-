@@ -1,10 +1,14 @@
 const express = require('express');
 const path = require('path')
-
+const isAuth = require('../middleware/is-auth')
 const adminController = require('../controllers/admin')
+
 
 const router = express.Router();
 
+// gets executed first, so if the user's not authenticated, he's redirected and next() is not called
+// and therefore the next middleware (controller function wouldnt be called) 
+router.use(isAuth);
 
 
 // add new middleware function

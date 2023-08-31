@@ -6,13 +6,22 @@ const mongoose = require('mongoose');
 const app = express();
 var { MONGODB_URI } = require('./util/URI');
 const session = require('express-session');
+const flash = require('connect-flash')
+
+app.use(bodyParser.urlencoded({extended: false}));
 
 // The session object imported from express is passed and stored in MongoDB
 const MongoDBStore = require('connect-mongodb-session')(session);
+const csrf = require('csurf')
+
 const store = new MongoDBStore({
     uri: MONGODB_URI,
     collection: 'sessions',
 });
+
+const csrfProtection = csrf();
+
+
 const path = require('path')
 
 const https = require('https');
@@ -28,13 +37,9 @@ app.set('view engine', 'ejs');
 
 app.set('views','views')
 
-
-
 const adminRoutes = require('./routes/admin')
 const shopRoutes = require('./routes/shop')
 const authRoutes = require('./routes/auth');
-
-app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
     secret: 'my secret', // assign the hash
@@ -42,7 +47,32 @@ app.use(session({
     saveUninitialized: true,
     store: store
 }))
+app.use(flash());
 
+app.use(csrfProtection);
+
+app.use((req, res, next) => {
+    if (!req.session.user) {
+        return next()
+    }
+    User.findById(req.session.user._id)
+    .then(user => {
+        req.user = user;
+        next();
+    })
+    .catch(err => {
+        console.log(err)
+    })
+
+})  
+
+
+app.use((req, res, next) => {
+    // local variables that are passed in the veiws only
+    res.locals.isAuthenticated =  req.session.isLoggedIn
+    res.locals.csrfToken = req.csrfToken();
+    next();
+})
 
 // only routes starting with /admin will go the admin routes file
 // I have two ecports in admin i will use both
@@ -55,22 +85,7 @@ app.use(errorController.get404);
 
 mongoose.connect(MONGODB_URI)
 .then(result => {
-    User.findOne()
-    .then(user => {
-        if (!user) {
-            const user = new User({
-                name: 'Mariam',
-                email: 'mariam@example.com',
-                cart: {
-                    items: []
-                }
-            })
-            
-        user.save();
-        }
-    })
     app.listen(3000);
-
 })
 .catch(err => {
     console.log(err)
