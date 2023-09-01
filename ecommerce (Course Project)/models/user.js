@@ -10,6 +10,8 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
+    resetToken: String,
+    resetTokenExpiration: Date,
     cart: {
         // product ID stores a reference of a product (object ID)
         items: [

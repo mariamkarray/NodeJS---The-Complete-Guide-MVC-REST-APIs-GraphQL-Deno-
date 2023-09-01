@@ -8,7 +8,7 @@ exports.getAddProducts = (req, res, next) => {
     res.render('admin/edit-product', {
     pageTitle: 'Add Product', 
     path: '/admin/add-product',
-    editing: fal   
+    editing: false 
 })
 }
 
@@ -61,13 +61,14 @@ exports.getEditProduct = (req, res, next) => {
 }
 
 exports.postEditProduct = (req, res, next) => {
+    
     // construct a new product and replace th eexisting one
     const prodId = req.body.productId;
     // this is the edit route
     // so i can get the new values i want to store as a part of the post request
     // because the user enters them in the form (post req body is sent to me)
     const { title, imageUrl, price, description } = req.body;
- 
+    
     Product.findByIdAndUpdate(prodId, {
         title,
         imageUrl,
@@ -83,7 +84,7 @@ exports.postEditProduct = (req, res, next) => {
 };
 
  exports.getProducts = (req, res, next) => {
-    Product.find()
+    Product.find({userId: req.user._id})
     .then(products => {
         res.render('admin/products', {
             prods: products,
@@ -97,7 +98,7 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
     const prodId = req.body.productId;
-    Product.findByIdAndRemove(prodId)
+    Product.deleteOne({_id: prodId, userId: req.user._id})
     .then( () => {
         console.log('DELETED PRODUCT!')
         res.redirect('/admin/products')
