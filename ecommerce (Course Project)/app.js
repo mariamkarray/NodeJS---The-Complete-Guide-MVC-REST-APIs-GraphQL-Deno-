@@ -8,6 +8,7 @@ var { MONGODB_URI } = require('./util/URI');
 const session = require('express-session');
 const flash = require('connect-flash')
 
+
 app.use(bodyParser.urlencoded({extended: false}));
 
 // The session object imported from express is passed and stored in MongoDB
