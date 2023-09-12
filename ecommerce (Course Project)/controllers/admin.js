@@ -3,7 +3,6 @@ const mongodb = require('mongodb');
 const { validationResult } = require('express-validator')
 
 exports.getAddProducts = (req, res, next) => {
-    console.log("Here from get");
     if (!req.session.isLoggedIn)
         return res.redirect('/login')
 
@@ -26,7 +25,7 @@ exports.postAddProduct = (req, res, next) => {
     if (!errors.isEmpty()) {
        return  res.status(422).render('admin/edit-product', {
             pageTitle: 'Add Product',
-            path: '/admin/edit-product',
+            path: '/admin/add-product',
             editing: false,
             hasError: true,
             product: {
@@ -44,15 +43,40 @@ exports.postAddProduct = (req, res, next) => {
     description: description, 
     imageUrl: imageUrl,
     userId: req.session.user
+
 });
+
    product.save() // save() is in mongoose
     .then(
         result => {
             console.log('Created Product');
             res.redirect('/admin/products')
         }
+        
     )
-    .catch(err => console.log(err))
+     .catch(err => {
+    //     return  res.status(500).render('admin/edit-product', {
+    //         pageTitle: 'Edit Product',
+    //         path: '/admin/add-product',
+    //         editing: true,
+    //         hasError: true,
+    //         product: {
+    //             title,
+    //             imageUrl,
+    //             price, 
+    //             description,
+    //             _id: prodId
+    //         },
+    //         errorMessage: "Database operation failed, please try again.",
+    //         validationErrors:  []
+    //     });
+    // res.redirect('/500');
+    
+    const error = new Error(err);
+    error.httpsStatuCode = 500;
+    // passed to a special 4 arg middleware that handles errors
+    return next(error);
+    })
 };
 
 
@@ -82,7 +106,12 @@ exports.getEditProduct = (req, res, next) => {
             validationErrors: []
         });
     })
-    .catch(err => console.log(err))
+    .catch(err => {
+        const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+})
 }
 
 exports.postEditProduct = (req, res, next) => {
@@ -123,7 +152,13 @@ exports.postEditProduct = (req, res, next) => {
         res.redirect('/admin/products')
     })
     // this catch block would catch errors from findByPk() promise and the .save() promise
-   .catch(err => console.log(err))
+   .catch(err => {
+    const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+    }
+    )
 };
 
  exports.getProducts = (req, res, next) => {
@@ -146,5 +181,10 @@ exports.postDeleteProduct = (req, res, next) => {
         console.log('DELETED PRODUCT!')
         res.redirect('/admin/products')
     })
-    .catch(err => console.log(err))
+    .catch(err => {
+        const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+    })
 }

@@ -5,30 +5,6 @@ const { google } = require('googleapis');
 
 const { validationResult } = require('express-validator')
 
-const OAuth2ClientCon =google.auth.OAuth2;
-
-var {CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REFRESH_TOKEN} = require("../util/URI")
-
-const nodemailer = require('nodemailer');
-const SendmailTransport = require('nodemailer/lib/sendmail-transport');
-
-const oAuth2Client = new OAuth2ClientCon(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
-oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN  })
-
-const accessToken = oAuth2Client.getAccessToken();
-const transport = nodemailer.createTransport({
-  service: 'gmail',
-  secure: true,
-  auth: {
-    type: 'OAuTH2',
-    user: 'mariamkarrayy@gmail.com',
-    clientId: CLIENT_ID,
-    clientSecret: CLIENT_SECRET,
-    refreshToken: REFRESH_TOKEN,
-    accessToken: accessToken
-  }
-})
-
 exports.getLogin = (req, res, next) => {
   const errors = validationResult(req)
   res.render('auth/login', {
@@ -116,7 +92,10 @@ exports.postLogin = (req, res, next) => {
        })
     })
     .catch(err => {
-      console.log(err)
+      const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
   })
 } 
 
@@ -147,16 +126,14 @@ exports.postSignup = (req, res, next) => {
       })
     return user.save()
     }).then(result => {
-      const mailOptions = {
-        from: 'mariamkarrayy@gmail.com',
-        to: email,
-        subject: "Signup succeeded ✔", 
-        html: "<b>Congrats! You have successfully signed up.</b>"
-      }
-      const sent = transport.sendMail(mailOptions)
       res.redirect('/login')
       })
-  .catch(err => console.log(err));
+  .catch(err => {
+    const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+  });
 };
 
 exports.postLogout = (req, res, next) => {
@@ -206,7 +183,12 @@ exports.postReset = (req, res, next) => {
       }
       const sent = transport.sendMail(mailOptions)
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+    });
   });
 }
 
@@ -222,7 +204,12 @@ exports.getNewPassword = (req, res, next) => {
       passwordToken: token
     });
   })
-  .catch(err => console.log(err));
+  .catch(err => {
+    const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+  });
 }
 exports.postNewPassword = (req, res, next) => {
   const newPassword = req.body.password;
@@ -245,5 +232,10 @@ exports.postNewPassword = (req, res, next) => {
   .then(result => {
     res.redirect('/login')
   })
-  .catch(err => console.log(err));
+  .catch(err => {
+    const error = new Error(err);
+        error.httpsStatuCode = 500;
+        // passed to a special 4 arg middleware that handles errors
+        return next(error);
+  });
 }
