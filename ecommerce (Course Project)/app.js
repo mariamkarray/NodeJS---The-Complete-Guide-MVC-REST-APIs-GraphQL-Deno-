@@ -7,8 +7,28 @@ const app = express();
 var { MONGODB_URI } = require('./util/URI');
 const session = require('express-session');
 const flash = require('connect-flash')
+const multer = require('multer')
 
+fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'images')
+    },
+    filename: (req, file, cb) => {
+        cb(null, new Date().getTime() + '-' + file.originalname)
+    }
+});
 
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg')
+        cb(null, true);
+    else
+        cb(null, false);
+}
+
+app.use(multer({
+    storage: fileStorage,
+    fileFilter: fileFilter
+}).single('image'))
 app.use(bodyParser.urlencoded({extended: false}));
 
 // The session object imported from express is passed and stored in MongoDB
@@ -41,7 +61,9 @@ app.set('views','views')
 const adminRoutes = require('./routes/admin')
 const shopRoutes = require('./routes/shop')
 const authRoutes = require('./routes/auth');
+
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(session({
     secret: 'my secret', // assign the hash
     resave: false, // the session will not be saved on every response, will change if smth changes in the session
