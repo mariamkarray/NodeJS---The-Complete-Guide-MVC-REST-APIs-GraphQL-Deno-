@@ -193,8 +193,8 @@ exports.postEditProduct = (req, res, next) => {
    
 }
 
-exports.postDeleteProduct = (req, res, next) => {
-    const prodId = req.body.productId;
+exports.deleteProduct = (req, res, next) => {
+    const prodId = req.params.productId;
     Product.findById(prodId).then( product => {
         if (!product) {
             return next(new Error('Product not found'))
@@ -205,12 +205,10 @@ exports.postDeleteProduct = (req, res, next) => {
     )
     .then( () => {
         console.log('DELETED PRODUCT!')
-        res.redirect('/admin/products')
+        // instead of redirecting, we send JSON behind the scenes
+        res.status(200).json({message: 'Success!'});
     })
     .catch(err => {
-        const error = new Error(err);
-        error.httpsStatuCode = 500;
-        // passed to a special 4 arg middleware that handles errors
-        return next(error);
+        res.status(500).json({message: 'Deleting failed!'});
     })
 }
