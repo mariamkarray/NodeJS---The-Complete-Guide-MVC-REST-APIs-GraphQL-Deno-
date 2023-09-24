@@ -1,6 +1,7 @@
 // provides a set of tools and functions that simplify tasks like routing, 
 // handling different types of requests, managing cookies and sessions, and serving static files, etc
 const express = require('express');
+// parse incoming request bodies
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const app = express();
