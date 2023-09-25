@@ -9,6 +9,7 @@ const multer = require('multer')
 const { v4: uuidv4 } = require('uuid');
 const app = express();
 const cors = require('cors');
+var { MONGODB_URI } = require('./util/URI');
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -58,7 +59,7 @@ app.use((error, req, res, next) => {
         message
     })
 })
-mongoose.connect(URI)
+mongoose.connect(MONGODB_URI)
 .then( result => {
     app.listen(8080);
     })
