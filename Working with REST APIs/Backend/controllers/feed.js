@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 const fs = require("fs");
 const path = require("path");
+const io = require("../socket");
 const User = require("../models/user");
 exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
@@ -11,6 +12,7 @@ exports.getPosts = async (req, res, next) => {
   try {
     const posts = await Post.find()
       .populate("creator")
+      .sort({ createdAt: -1 })
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
     res.status(200).json({
@@ -54,6 +56,11 @@ exports.createPost = async (req, res, next) => {
     const user = await User.findById(req.userId);
     user.posts.push(post); // add post to user
     await user.save(); // changes to the user object will be saved to the database before proceeding to the next line of code.
+    // send to all connected clients
+    io.getIO().emit("posts", {
+      action: "create",
+      post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+    });
     res.status(201).json({
       message: "Post created successfully!",
       post,
@@ -98,15 +105,17 @@ exports.updatePost = async (req, res, next) => {
     error.statusCode = 422; // Unprocessable Entity (Validation error)
   }
 
-  const post = await Post.findById(postId);
+  const post = await Post.findById(postId).populate("creator");
   try {
     if (!post) {
       const error = new Error("Could not find post.");
       error.statusCode = 404; // Not Found error
       throw error; // catch() will catch this and forward with next()
     }
-    if (post.creator.toString() !== req.userId) {
-      const error = new Error("Not autherized.");
+    if (post.creator._id.toString() !== req.userId) {
+      console.log(post.creator.toString());
+      console.log(req.userId);
+      const error = new Error("Not authorized.");
       error.statusCode = 403; // autherization issue
       throw error; // catch() will catch this and forward with next()
     }
@@ -120,6 +129,10 @@ exports.updatePost = async (req, res, next) => {
     } else {
       result = await post.save();
     }
+    io.getIO().emit("posts", {
+      action: "update",
+      post: result,
+    });
     res.status(200).json({ message: "Post updated!", post: result });
   } catch (err) {
     next(err);
@@ -136,7 +149,7 @@ exports.deletePost = async (req, res, next) => {
       throw error; // catch() will catch this and forward with next()
     }
     if (post.creator.toString() !== req.userId) {
-      const error = new Error("Not autherized.");
+      const error = new Error("Not authorized.");
       error.statusCode = 403; // autherization issue
       throw error; // catch() will catch this and forward with next()
     }
@@ -146,6 +159,10 @@ exports.deletePost = async (req, res, next) => {
     user.posts.pull(postId);
     const result = await user.save();
     console.log(result);
+    io.getIO().emit("posts", {
+      action: "delete",
+      post: postId,
+    });
     res.status(200).json({ message: "Deleted post." });
   } catch (err) {
     if (!err.statusCode) {
