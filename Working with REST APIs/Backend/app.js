@@ -2,15 +2,17 @@ const path = require("path");
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const feedRoutes = require("./routes/feed");
-const authRoutes = require("./routes/auth");
 const mongoose = require("mongoose");
 const multer = require("multer");
+const { graphqlHTTP } = require("express-graphql");
 const { v4: uuidv4 } = require("uuid");
 const app = express();
 const cors = require("cors");
 var { MONGODB_URI } = require("./util/URI");
-
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middleware/auth");
+const { clearImage } = require("./util/file");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "images");
@@ -45,17 +47,58 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
   next();
 });
 
-// forward any GET /feed/posts incoming request
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
+app.use(auth);
 
+app.put("/post-image", (req, res, next) => {
+  if (!req.isAuth) {
+    throw new Error("Not authenticated");
+  }
+  if (!req.file) {
+    return res.status(200).json({ message: "No file provided!" });
+  }
+  if (req.body.oldPath) {
+    clearImage(req.body.oldPath);
+  }
+  return res.status(201).json({
+    message: "File stored",
+    filePath: req.file.path.replace("\\", "/"),
+  });
+});
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true, // a special tool that allows testing the graphql queries
+    // formatError(err) {
+    //   // original error is an error thrown by graphql
+    //   if (!err.originalError) {
+    //     return err;
+    //   }
+    //   const data = err.originalError.data;
+    //   const message = err.message || "An error occured";
+    //   const code = err.originalError.code || 500;
+    //   return { message: message, status: code, data: data };
+    // },
+    customFormatErrorFn: (error) => ({
+      message: error.message || "An error occurred.",
+    }),
+  })
+);
+
+// error handling middleware
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statsCode || 500;
   const message = error.message;
+  console.log(error);
   res.status(status).json({
     message,
   });
@@ -63,17 +106,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI)
   .then((result) => {
-    const server = app.listen(8080);
-    // socket.io is imported and initialized with the prev http server
-    const io = require("./socket").init(server, {
-      cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
-      },
-    });
-    // When a client successfully establishes a WebSocket connection with the server, this event is triggered.
-    io.on("connection", (socket) => {
-      console.log("Client connected");
-    });
+    console.log("Connected");
+    app.listen(8080);
   })
   .catch((err) => console.log(err));
